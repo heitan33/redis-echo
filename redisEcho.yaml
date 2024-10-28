@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: public
+data:
+  REDIS_NODES: "redis://:uAqfx7rQDV8Kra@10.2.4.230:6379,redis://:uAqfx7rQDV8Kra@10.2.4.144:6379,redis://:uAqfx7rQDV8Kra@10.2.4.142:6379,redis://:uAqfx7rQDV8Kra@10.2.4.40:6379,redis://:uAqfx7rQDV8Kra@10.2.4.209:6379,redis://:uAqfx7rQDV8Kra@10.2.4.201:6379,redis://:uAqfx7rQDV8Kra@10.2.4.171:6379,redis://:uAqfx7rQDV8Kra@10.2.4.240:6379,redis://:uAqfx7rQDV8Kra@10.2.4.87:6379,redis://:uAqfx7rQDV8Kra@10.2.4.117:6379"
+  EXPOSE_PORT: "9122"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redisecho
+  namespace: public
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redisecho
+  template:
+    metadata:
+      labels:
+        app: redisecho
+    spec:
+      containers:
+        - name: redisecho
+          image: eu-frankfurt-1.ocir.io/cnmegk4mhxmt/redisecho:1.0
+          ports:
+            - containerPort: 9122
+          env:
+            - name: REDIS_NODES
+              valueFrom:
+                configMapKeyRef:
+                  name: redis-config
+                  key: REDIS_NODES
+            - name: EXPOSE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: redis-config
+                  key: EXPOSE_PORT
+      imagePullSecrets:
+      - name: aliyun-registry
+      dnsPolicy: ClusterFirs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redisecho
+  namespace: public
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9122
+      targetPort: 9122
+  selector:
+    app: redisecho
